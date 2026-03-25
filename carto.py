@@ -1,6 +1,6 @@
 
 import folium
-import pandas as pd
+# import pandas as pd
 from branca.colormap import LinearColormap
 
 
@@ -61,8 +61,8 @@ def plot_carte(df_candidat, departement_borders, candidat_nom):
         gdf,
         style_function=lambda feature: {
             'fillColor': colormap(feature['properties']['surrepresentation'])
-                         if feature['properties']['surrepresentation'] is not None
-                         else 'grey',
+            if feature['properties']['surrepresentation'] is not None
+            else 'grey',
             'color': 'black',
             'weight': 0.5,
             'fillOpacity': 0.7,
