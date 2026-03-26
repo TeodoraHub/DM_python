@@ -49,15 +49,15 @@ def plot_carte_statique(df_candidat, departement_borders, candidat_nom):
         edgecolor='black',
         legend=True,
         legend_kwds={
-            'label': "% par rapport à la moyenne nationale",
-            'shrink': 0.3,
-            'aspect': 60
+            'shrink': 0.4,   # diminue la hauteur globale
+            'aspect': 40,    # rapport hauteur/largeur
         },
         ax=ax
     )
     ax.axis('off')
-
-    return fig
+    cbar = ax.get_figure().axes[-1]
+    cbar.set_ylabel("(% par rapport\nmoyenne nationale)", rotation=0, labelpad=60, va='top', y=1.05)
+    plt.show()
 
 
 def plot_carte_dym(df_candidat, departement_borders, candidat_nom):
