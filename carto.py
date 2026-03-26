@@ -2,6 +2,9 @@
 import folium
 # import pandas as pd
 from branca.colormap import LinearColormap
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
 
 
 def filtrer_candidat(score_departements, candidat_nom):
@@ -22,21 +25,8 @@ def filtrer_candidat(score_departements, candidat_nom):
     ].copy()
 
 
-def plot_carte(df_candidat, departement_borders, candidat_nom):
-    """
-    Fait la jointure avec le fond de carte et affiche une carte
-    choroplèthe de la surreprésentation par département.
+def plot_carte_statique(df_candidat, departement_borders, candidat_nom):
 
-    Paramètres
-    ----------
-    df_candidat : pd.DataFrame
-        Résultat de filtrer_candidat().
-    departement_borders : GeoDataFrame
-        Fond de carte cartiflette.
-    candidat_nom : str
-        Nom complet du candidat pour le titre.
-    """
-    # Jointure fond de carte + données
     gdf = departement_borders.merge(
         df_candidat[['code_departement', 'surrepresentation']],
         left_on='INSEE_DEP',
@@ -44,25 +34,59 @@ def plot_carte(df_candidat, departement_borders, candidat_nom):
         how='left'
     )
 
-    # Palette rouge/blanc/bleu centrée sur 0
+    gdf['surrepresentation'] = gdf['surrepresentation'].fillna(0)
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+
+    vmax = gdf['surrepresentation'].abs().max()
+
+    gdf.plot(
+        column='surrepresentation',
+        cmap='RdBu_r',
+        vmin=-vmax,
+        vmax=vmax,
+        linewidth=0.5,
+        edgecolor='black',
+        legend=True,
+        legend_kwds={
+            'label': "% par rapport à la moyenne nationale",
+            'shrink': 0.3,
+            'aspect': 60
+        },
+        ax=ax
+    )
+    ax.axis('off')
+
+    return fig
+
+
+def plot_carte_dym(df_candidat, departement_borders, candidat_nom):
+
+    gdf = departement_borders.merge(
+        df_candidat[['code_departement', 'surrepresentation']],
+        left_on='INSEE_DEP',
+        right_on='code_departement',
+        how='left'
+    )
+
+    gdf['surrepresentation'] = gdf['surrepresentation'].fillna(0)
+    cmap = cm.get_cmap('RdBu_r', 256)
+    colors = [mcolors.rgb2hex(cmap(i)) for i in range(cmap.N)]
+
     valeur_max = gdf['surrepresentation'].abs().max()
+
     colormap = LinearColormap(
-        colors=['blue', 'white', 'red'],
+        colors=colors,
         vmin=-valeur_max,
         vmax=valeur_max,
         caption=f'Surreprésentation (%) par rapport à la moyenne nationale — {candidat_nom}'
     )
 
-    # Carte centrée sur la France
     m = folium.Map(location=[46.5, 2.5], zoom_start=6, tiles='CartoDB positron')
-
-    # Ajout des départements
     folium.GeoJson(
         gdf,
         style_function=lambda feature: {
-            'fillColor': colormap(feature['properties']['surrepresentation'])
-            if feature['properties']['surrepresentation'] is not None
-            else 'grey',
+            'fillColor': colormap(feature['properties']['surrepresentation']),
             'color': 'black',
             'weight': 0.5,
             'fillOpacity': 0.7,
@@ -70,7 +94,6 @@ def plot_carte(df_candidat, departement_borders, candidat_nom):
         tooltip=folium.GeoJsonTooltip(
             fields=['INSEE_DEP', 'LIBELLE_DEPARTEMENT', 'surrepresentation'],
             aliases=['Département', 'Libellé', 'Surreprésentation (%)'],
-            localize=True
         )
     ).add_to(m)
 
